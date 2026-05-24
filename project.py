@@ -8,38 +8,38 @@ from rich.progress import Progress
 
 CHILDHOOD_END_AGE = 18
 COHAB_DAYS_PER_YEAR = 350
- 
+
 def parse_frequency(s):
     s = s.strip().lower()
     s = (s.replace("once", "1 times")
           .replace("twice", "2 times")
           .replace("thrice", "3 times"))
- 
+
     m = re.search(
         r"([0-9]+)\s*(?:times?\s*)?(?:a\s+|per\s+)?(day|week|month|year)",
         s,
     )
     if m:
         return int(m.group(1)), m.group(2)
- 
+
     m = re.search(r"([0-9]+)\s*times?\s+(daily|weekly|monthly|yearly|annually)", s)
     if m:
         span = {"daily":"day","weekly":"week","monthly":"month",
                 "yearly":"year","annually":"year"}[m.group(2)]
         return int(m.group(1)), span
- 
+
     for word, span in [("daily","day"),("weekly","week"),
                        ("monthly","month"),("yearly","year"),("annually","year")]:
         if word in s:
             return 1, span
- 
+
     for span in ("day","week","month","year"):
         if f"every {span}" in s:
             return 1, span
- 
+
     raise ValueError
- 
- 
+
+
 def to_per_year(times, span):
     if span == "day":
         return round(times * 365.25)
@@ -48,8 +48,8 @@ def to_per_year(times, span):
     if span == "month":
         return times * 12
     return times
- 
- 
+
+
 def parse_relation(s):
     s = s.strip().lower()
     for term in [
@@ -76,16 +76,16 @@ def parse_relation(s):
     if "friend" in s:
         return "friend"
     return None
- 
- 
+
+
 def calculate_life_stats(dob, life_expectancy=80):
     death = dob + relativedelta(years=life_expectancy)
     age_years = relativedelta(date.today(), dob).years
     years_remaining = max(0, relativedelta(death, date.today()).years)
     percent_elapsed = (age_years * 100) / life_expectancy
     return {"age": age_years, "timeleft": years_remaining, "percent": percent_elapsed}
- 
- 
+
+
 def calculate_remaining(dictn, age, life_expectancy=80):
     personalfreq = []
     for event, times in dictn.items():
@@ -95,8 +95,8 @@ def calculate_remaining(dictn, age, life_expectancy=80):
             {"event": event, "used": used, "total": total, "remaining": total - used}
         )
     return personalfreq
- 
- 
+
+
 def calculate_relation(peopledict, age, timeleft, life_expectancy=80):
     relationstats = {}
     for person, values in peopledict.items():
@@ -104,7 +104,7 @@ def calculate_relation(peopledict, age, timeleft, life_expectancy=80):
         their_age = max(0, min(values["age"], life_expectancy))
         relation = values["relation"]
         years_left_together = max(0, min(timeleft, life_expectancy - their_age))
- 
+
         if relation == "sibling":
             relationship_years_so_far = min(age, their_age)
             older_age = max(age, their_age)
@@ -125,7 +125,7 @@ def calculate_relation(peopledict, age, timeleft, life_expectancy=80):
                 future_cohabitation_years * COHAB_DAYS_PER_YEAR
                 + future_apart_years * times
             )
- 
+
         elif relation == "parent":
             childhood_years_so_far = min(age, CHILDHOOD_END_AGE)
             adult_years_so_far = max(0, age - CHILDHOOD_END_AGE)
@@ -141,7 +141,7 @@ def calculate_relation(peopledict, age, timeleft, life_expectancy=80):
                 future_childhood_years * COHAB_DAYS_PER_YEAR
                 + future_adult_years * times
             )
- 
+
         elif relation == "child":
             cohab_so_far = min(their_age, CHILDHOOD_END_AGE)
             adult_so_far = max(0, their_age - CHILDHOOD_END_AGE)
@@ -153,12 +153,12 @@ def calculate_relation(peopledict, age, timeleft, life_expectancy=80):
             remaining_meetings = (
                 future_cohab * COHAB_DAYS_PER_YEAR + future_adult * times
             )
- 
+
         else:
             years_known = values.get("years_known", max(0, age - CHILDHOOD_END_AGE))
             meetings_so_far = years_known * times
             remaining_meetings = years_left_together * times
- 
+
         total_meetings = meetings_so_far + remaining_meetings
         percent_used = (
             (meetings_so_far / total_meetings * 100) if total_meetings > 0 else 0
@@ -171,22 +171,22 @@ def calculate_relation(peopledict, age, timeleft, life_expectancy=80):
             "percent_used": round(percent_used),
         }
     return relationstats
- 
- 
+
+
 def pause():
     print("[dim](press enter)[/dim] ", end="")
     input()
- 
- 
+
+
 def main():
     print(Panel("[bold]The Tail End", subtitle="after Tim Urban"))
     print()
     print("It is easy to imagine more time than you have.")
     print("This is a look at what is actually left.\n")
     sleep(0.8)
- 
+
     name = input("First, your name please: ").strip().lower().capitalize()
- 
+
     while True:
         try:
             dob_str = input("And the day you were born (YYYY-MM-DD): ").strip()
@@ -200,24 +200,24 @@ def main():
             break
         except ValueError:
             print("Could not read that. Use YYYY-MM-DD.")
- 
+
     le_str = input("Life expectancy to use (enter for 80): ").strip()
     try:
         life_expectancy = int(le_str) if le_str else 80
     except ValueError:
         life_expectancy = 80
- 
+
     stats = calculate_life_stats(dob, life_expectancy)
     age = stats["age"]
- 
+
     if age >= life_expectancy:
         print(f"\n{name}, you have already outlived the {life_expectancy}-year mark.")
         print("The math here does not apply to you. Live well.\n")
         return
- 
+
     print(f"\n{name}, here are the weeks of your life.\n")
     sleep(1.2)
- 
+
     per_line = 52
     count = 0
     weeks_lived = round(age * 52.143)
@@ -239,7 +239,7 @@ def main():
         f'You have used {int(stats["percent"])}% of an {life_expectancy}-year life.\n'
     )
     pause()
- 
+
     print(f"\nA few things you will still see, {name}:\n")
     sleep(0.4)
     rates = {
@@ -259,7 +259,7 @@ def main():
         sleep(0.2)
     print()
     pause()
- 
+
     print("\nNow your turn! Let's try this with the things you do")
     print("A morning coffee. The Sunday paper. A walk you take. A sport you watch\n")
     activities = {}
@@ -276,7 +276,7 @@ def main():
             print("Could not read that. Skipping.\n")
             continue
         activities[activity] = to_per_year(times, span)
- 
+
     if activities:
         print()
         for activity, times_per_year in activities.items():
@@ -287,7 +287,7 @@ def main():
             print(f"{activity}: about {remaining:,} more, at {times_per_year} a year.")
         print()
         pause()
- 
+
     print("\nMost of those happen at a roughly even rate every year of your life,")
     print(
         "which means you have used about as much of them as you have used of your time."
@@ -304,7 +304,7 @@ def main():
     pause()
     print("\n[bold]Relationships[/bold]\n")
     sleep(0.3)
- 
+
     people = {}
     while True:
         person = input("Who is a person you love? (enter to stop): ").strip()
@@ -328,13 +328,13 @@ def main():
                 f"{person} is outside the {life_expectancy}-year model. Using boundary values."
             )
             their_age = max(0, min(their_age, life_expectancy - 1))
- 
+
         same_city = input(
             f"Do you live in the same city as {person}? (y/n): "
         ).strip().lower().startswith("y")
- 
+
         will_separate = same_city and (age < 18 or their_age < 18)
- 
+
         if will_separate:
             print(
                 f"You currently live in the same city as {person}. "
@@ -357,7 +357,7 @@ def main():
                 times = default_times
         else:
             times = default_times
- 
+
         years_known = None
         if rel in ("partner", "friend", "grandparent"):
             default_known = age if rel == "grandparent" else max(0, age - CHILDHOOD_END_AGE)
@@ -369,12 +369,12 @@ def main():
                 years_known = int(raw) if raw else default_known
             except ValueError:
                 years_known = default_known
- 
+
         entry = {"times": times, "relation": rel, "age": their_age}
         if years_known is not None:
             entry["years_known"] = years_known
         people[person] = entry
- 
+
         result = calculate_relation(
             {person: entry}, age, stats["timeleft"], life_expectancy
         )[person]
@@ -395,7 +395,7 @@ def main():
         print(f'About {result["remaining_meetings"]:,} meetings remain.\n')
         sleep(0.6)
         pause()
- 
+
     if people:
         all_results = calculate_relation(
             people, age, stats["timeleft"], life_expectancy
@@ -409,7 +409,7 @@ def main():
             f'{top_data["percent_used"]}% gone. About {top_data["remaining_meetings"]:,} meetings left.'
         )
         pause()
- 
+
     print("\nThree things worth holding on to:\n")
     print(
         "1) Where you live matters. Time with people in your city is roughly ten times the time with people somewhere else."
@@ -433,7 +433,7 @@ def main():
     )
     print("The question is — what will you do with the rest of it?")
     print(f"That is all, {name}. Adios amigo!\n")
- 
- 
+
+
 if __name__ == "__main__":
     main()
